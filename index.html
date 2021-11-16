@@ -16,11 +16,32 @@
         function play() {
         var audio = document.getElementById("audio");
         audio.play();
+        var playbutton = document.getElementById("play");
+        playbutton.value = "Pause";
+        }
+
+        function playbtn() {
+          var playbutton = document.getElementById("play");
+          playbutton.value = "Pause";
+          var audio = document.getElementById("audio");
+          audio.play();
+          document.getElementById("play").onclick = pause;
         }
 
         function pause() {
         var audio = document.getElementById("audio");
         audio.pause();
+        var audio2 = document.getElementById("audio2");
+        audio2.pause();
+        var playbutton = document.getElementById("play");
+          playbutton.value = "Play";
+        }
+
+        function audio2() {
+        audio.pause();
+        document.body.style.backgroundImage = "url('https://source.unsplash.com/1920x1080/?nature,water,lofi')";
+        var audio2 = document.getElementById("audio2");
+        audio2.play();
         }
     </script>
 
@@ -136,7 +157,31 @@
   transform: translateY(6px);
 }
 
+.buttonPlay1 {
+  position: absolute;
+  bottom: 20px;
+  left: 160px;
+  display: inline-block;
+  padding: 15px 25px;
+  font-size: 24px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  outline: none;
+  color: #fff;
+  background-color: var(--clr-neon);
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 9px #999;
+}
 
+.buttonPlay1:hover {background-color: var(--clr-neon1)}
+
+.buttonPlay1:active {
+  background-color: var(--clr-neon2);
+  box-shadow: 0 5px #666;
+  transform: translateY(6px);
+}
 </style>
 
 </head>
@@ -170,20 +215,13 @@
         ❆
         </div>
     </div>
-    <br>
     <center><a href="#" onclick="play()"  style="font-family:Arial, Helvetica, sans-serif;" class="neon-button">LOFI BEATS (LIVE)</a></center>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
     <div class="overlay">
     <Body background="https://source.unsplash.com/1920x1080/?nature,water,lofi"></div>    
-    <input class="buttonPlay" type="button" value="Pause" onclick="pause()">
+    <input class="buttonPlay" id="play" type="button" value="Play" onclick="playbtn()">
+    <input class="buttonPlay1" type="button" value="Switch" onclick="audio2()">
     <audio id="audio" src="http://node-17.zeno.fm/0r0xa792kwzuv"></audio>
+    <audio id="audio2" src="https://ec2.yesstreaming.net:1915/stream"></audio>
     
 </body>
 </html>
