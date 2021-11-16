@@ -43,13 +43,114 @@
 
         function audio2() {
         audio.pause();
-        document.body.style.backgroundImage = "url('https://source.unsplash.com/1920x1080/?nature,water,lofi')";
         var audio2 = document.getElementById("audio2");
         audio2.play();
         var playbutton = document.getElementById("play");
         playbutton.value = "Pause";
         document.getElementById("play").onclick = pause;
         }
+
+
+        window.addEventListener("DOMContentLoaded",() => {
+	const clock = new BouncyEmbossedClock(".clock");
+});
+
+class BouncyEmbossedClock {
+	constructor(el) {
+		this.el = document.querySelector(el);
+		this.els = this.el ? this.el.querySelectorAll(".clock__digit") : [];
+		this.digits = [];
+		this.to = null;
+		this.dto = [
+			[null,null,null],
+			[null,null,null],
+			[null,null],
+			[null,null,null],
+			[null,null,null],
+			[null,null],
+			[null,null,null],
+			[null,null,null],
+		];
+		this.staticUpdate();
+		this.update();
+	}
+	getTime() {
+		const time = new Date();
+		const hms = [
+			time.getHours(),
+			time.getMinutes(),
+			time.getSeconds()
+		];
+
+		return hms.map(u => u < 10 ? `0${u}` : `${u}`).join(":").split("");	
+	}
+	staticUpdate() {
+		if (this.els) {
+			this.digits = this.getTime();
+			this.digits.forEach((d,i) => {
+				this.els[i].textContent = d;
+			});
+		}
+	}
+	update() {
+		if (this.els) {
+			// get the time
+			const display = this.getTime();
+			const bounce = "clock__digit--bounce";
+			const baseDelay = 350;
+			const delayDec = 50;
+
+			// display the digits
+			display.forEach((d,i) => {
+				if (+d > +this.digits[i] || +d === 0 && +this.digits[i] !== 0) {
+					const colonElCL = display[i + 1] === ":" ? this.els[i + 1].classList : null;
+					const el = this.els[i];
+					const timeout = baseDelay - delayDec * i;
+
+					this.dto[i].forEach(t => {
+						clearTimeout(t);
+					});
+
+					// run the animation
+					this.dto[i][0] = setTimeout(() => {
+						el.classList.add(bounce);
+					}, timeout);
+
+					// show the next digit
+					this.dto[i][1] = setTimeout(() => {
+						el.textContent = d;
+					}, timeout + 167);
+
+					// kill the animation
+					this.dto[i][2] = setTimeout(() => {
+						el.classList.remove(bounce);
+					}, timeout + 500);
+
+					// colon animation (if applicable)
+					if (colonElCL) {
+						this.dto[i + 1].forEach(t => {
+							clearTimeout(t);
+						});
+
+						this.dto[i + 1][0] = setTimeout(() => {
+							 colonElCL.add(bounce);
+						}, timeout - delayDec);
+
+						this.dto[i + 1][1] = setTimeout(() => {
+							 colonElCL.remove(bounce);
+						}, (timeout - delayDec) + 500);
+					}
+				}
+
+				this.digits[i] = d;
+			});
+
+			// loop
+			clearTimeout(this.to);
+			this.to = setTimeout(this.update.bind(this),1e3);
+		}
+	}
+}
     </script>
 
 <style>
@@ -142,6 +243,7 @@
   position: absolute;
   bottom: 20px;
   left: 16px;
+  opacity: 0.7;
   display: inline-block;
   padding: 15px 25px;
   font-size: 24px;
@@ -168,6 +270,7 @@
   position: absolute;
   bottom: 20px;
   left: 160px;
+  opacity: 0.7;
   display: inline-block;
   padding: 15px 25px;
   font-size: 24px;
@@ -189,6 +292,23 @@
   box-shadow: 0 5px #666;
   transform: translateY(6px);
 }
+
+.neon-button-clock {
+  position: absolute;
+  bottom: 10px;
+  right: 30px;
+  opacity: 0.5;
+  font-size: 3rem;
+  display: inline-block;
+  cursor: pointer;
+  text-decoration: none;
+  color:white;
+
+
+  text-shadow: 0 0 0.125em hsl(0 0% 100% / 0.3), 0 0 0.45em currentColor;
+
+}
+
 </style>
 
 </head>
@@ -229,6 +349,18 @@
     <input class="buttonPlay1" type="button" value="Switch" onclick="audio2()">
     <audio id="audio" src="http://node-17.zeno.fm/0r0xa792kwzuv"></audio>
     <audio id="audio2" src="https://ec2.yesstreaming.net:1915/stream"></audio>
-    
+
+    <div class="neon-button-clock" style="font-family:Arial, Helvetica, sans-serif;">
+    <div class="clock">
+      <span class="clock__digit">0</span>
+      <span class="clock__digit">0</span>
+      <span class="clock__digit">:</span>
+      <span class="clock__digit">0</span>
+      <span class="clock__digit">0</span>
+      <span class="clock__digit">:</span>
+      <span class="clock__digit">0</span>
+      <span class="clock__digit">0</span>
+    </div>
+    </div>
 </body>
 </html>
