@@ -238,72 +238,33 @@ class BouncyEmbossedClock {
 .neon-button:focus::after {
   opacity: 1;
 }
-
-.buttonPlay {
+.neon-button-clock1 {
   position: absolute;
-  bottom: 20px;
-  left: 16px;
-  opacity: 0.7;
-  display: inline-block;
-  padding: 15px 25px;
-  font-size: 24px;
+  bottom: 10px;
+  opacity: 0.8;
+  font-size: 3rem;
+  display: block;
   cursor: pointer;
-  text-align: center;
   text-decoration: none;
-  outline: none;
-  color: #fff;
-  background-color: var(--clr-neon);
+  padding: 4;
   border: none;
-  border-radius: 15px;
-  box-shadow: 0 9px #999;
-}
+  background: none;
+  color:white;
 
-.buttonPlay:hover {background-color: var(--clr-neon1)}
+  text-shadow: 0 0 0.125em hsl(0 0% 100% / 0.3), 0 0 0.45em currentColor;
 
-.buttonPlay:active {
-  background-color: var(--clr-neon2);
-  box-shadow: 0 5px #666;
-  transform: translateY(6px);
-}
-
-.buttonPlay1 {
-  position: absolute;
-  bottom: 20px;
-  left: 160px;
-  opacity: 0.7;
-  display: inline-block;
-  padding: 15px 25px;
-  font-size: 24px;
-  cursor: pointer;
-  text-align: center;
-  text-decoration: none;
-  outline: none;
-  color: #fff;
-  background-color: var(--clr-neon);
-  border: none;
-  border-radius: 15px;
-  box-shadow: 0 9px #999;
-}
-
-.buttonPlay1:hover {background-color: var(--clr-neon1)}
-
-.buttonPlay1:active {
-  background-color: var(--clr-neon2);
-  box-shadow: 0 5px #666;
-  transform: translateY(6px);
 }
 
 .neon-button-clock {
   position: absolute;
   bottom: 10px;
   right: 30px;
-  opacity: 0.5;
   font-size: 3rem;
+  cursor: none;
   display: inline-block;
-  cursor: pointer;
   text-decoration: none;
   color:white;
-
+  
 
   text-shadow: 0 0 0.125em hsl(0 0% 100% / 0.3), 0 0 0.45em currentColor;
 
@@ -344,9 +305,9 @@ class BouncyEmbossedClock {
     </div>
     <center><a href="#" onclick="play()"  style="font-family:Arial, Helvetica, sans-serif;" class="neon-button">LOFI BEATS (LIVE)</a></center>
     <div class="overlay">
-    <Body background="https://source.unsplash.com/1920x1080/?nature,water,lofi"></div>    
-    <input class="buttonPlay" id="play" type="button" value="Play" onclick="playbtn()">
-    <input class="buttonPlay1" type="button" value="Switch" onclick="audio2()">
+    <Body background="https://source.unsplash.com/1920x1080/?nature,water,lofi"></div>  
+    <input class="neon-button-clock1" id="play" type="button" style="left: 30px;" value="Play" onclick="playbtn()">
+    <input class="neon-button-clock1" type="button" value="Switch" style="left: 200px;" onclick="audio2()">
     <audio id="audio" src="http://node-17.zeno.fm/0r0xa792kwzuv"></audio>
     <audio id="audio2" src="https://ec2.yesstreaming.net:1915/stream"></audio>
 
