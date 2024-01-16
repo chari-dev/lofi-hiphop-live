@@ -154,7 +154,16 @@ class BouncyEmbossedClock {
     </script>
 
 <style>
-/* customizable snowflake styling */
+	body {
+    background: url('https://source.unsplash.com/1920x1080/?nature,water,lofi') no-repeat center center fixed;
+    background-size: cover;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+}
+
+	
     .snowflake {
     color: #fff;
     font-size: 1em;
@@ -304,8 +313,8 @@ class BouncyEmbossedClock {
         </div>
     </div>
     <center><a href="#" onclick="play()"  style="font-family:Arial, Helvetica, sans-serif;" class="neon-button">LOFI BEATS (LIVE)</a></center>
-    <div class="overlay">
-    <Body background="https://source.unsplash.com/1920x1080/?nature,water,lofi"></div>  
+    <div class="overlay"></div>  
+    
     <input class="neon-button-clock1" id="play" type="button" style="left: 30px;" value="Play" onclick="playbtn()">
     <input class="neon-button-clock1" type="button" value="Switch" style="left: 200px;" onclick="audio2()">
     <audio id="audio" src="http://node-17.zeno.fm/0r0xa792kwzuv"></audio>
