@@ -5,12 +5,15 @@
     <title>Lofi Live</title>
     <script>
 
-        // Function to change webpage background color
-        function changeBodyBg(color){
-            document.body.style.background = color;
+        // Function to change webpage background
+        function changeBodyBg(image_url){
+            document.body.style.backgroundImage = `url('${image_url}')`;
+            // Disable animation to keep selected background static
+            document.body.style.animation = 'none'; 
         }
-        function txt(color){
-            document.body.color = color;
+
+        function resetBackgroundAnimation() {
+            document.body.style.animation = 'changeBackground 30s ease-in-out infinite';
         }
        
         function play() {
@@ -28,6 +31,10 @@
           playbutton.value = "Pause";
           var audio = document.getElementById("audio");
           audio.play();
+          if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
+          }
+          initVisualizer(audio); 
           document.getElementById("play").onclick = pause;
         }
 
@@ -42,18 +49,229 @@
         }
 
         function audio2() {
-        audio.pause();
-        var audio2 = document.getElementById("audio2");
-        audio2.play();
+        var currentAudio = document.getElementById("audio");
+        currentAudio.pause();
+        var nextAudio = document.getElementById("audio2");
+        nextAudio.play();
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+        initVisualizer(nextAudio); 
         var playbutton = document.getElementById("play");
         playbutton.value = "Pause";
-        document.getElementById("play").onclick = pause;
+        document.getElementById("play").onclick = pause; // Should still call main pause function
         }
+
+        function toggleSnowflakes() {
+            var snowflakes = document.getElementById("snowflakes");
+            if (snowflakes.style.display === "none") {
+                snowflakes.style.display = "block";
+            } else {
+                snowflakes.style.display = "none";
+            }
+        }
+
+        var audioContext, analyser, source, dataArray, bufferLength;
+        var visualizerInitializedForAudio1 = false;
+        var visualizerInitializedForAudio2 = false;
+        var currentAudioElement = null;
+
+        function initVisualizer(audioElement) {
+            // If context doesn't exist or is closed, create it
+            if (!audioContext || audioContext.state === 'closed') {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                analyser.connect(audioContext.destination); // Connect analyser to destination
+            }
+
+            // If the source is different or not initialized for this element
+            if (currentAudioElement !== audioElement) {
+                if (source) {
+                    source.disconnect(); // Disconnect previous source
+                }
+                source = audioContext.createMediaElementSource(audioElement);
+                source.connect(analyser);
+                currentAudioElement = audioElement; // Update current audio element
+
+                // Start drawing if not already started
+                if ((audioElement.id === "audio" && !visualizerInitializedForAudio1) || (audioElement.id === "audio2" && !visualizerInitializedForAudio2)) {
+                    if (audioElement.id === "audio") visualizerInitializedForAudio1 = true;
+                    if (audioElement.id === "audio2") visualizerInitializedForAudio2 = true;
+                     // Start drawing only if it's the first time for this audio or context was recreated.
+                    if (!drawVisualizer.animationFrameId) { // Check if drawing loop is already running
+                        drawVisualizer();
+                    }
+                }
+            }
+             // Ensure the audio context is running
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        }
+
+        function drawVisualizer() {
+            const canvas = document.getElementById("visualizer");
+            // Ensure canvas and context are available
+            if (!canvas) {
+                console.error("Visualizer canvas not found");
+                return;
+            }
+            const canvasCtx = canvas.getContext("2d");
+            if (!canvasCtx) {
+                console.error("Canvas context not available");
+                return;
+            }
+
+            // Check if analyser is available and audio is playing
+            if (analyser && currentAudioElement && !currentAudioElement.paused) {
+                analyser.getByteFrequencyData(dataArray);
+                canvasCtx.fillStyle = 'hsl(323 21% 16%)'; 
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+                const barWidth = (canvas.width / bufferLength) * 2.5;
+                let barHeight;
+                let x = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    barHeight = dataArray[i] / 1.5; // Increased bar height
+                    canvasCtx.fillStyle = 'hsl(317 100% 54%)'; 
+                    canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                    x += barWidth + 1;
+                }
+            } else {
+                // Optionally, clear canvas or draw a static state when audio is paused
+                canvasCtx.fillStyle = 'hsl(323 21% 16%)';
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+                 // Draw placeholder text or image
+                canvasCtx.fillStyle = 'hsl(317 100% 54%)';
+                canvasCtx.textAlign = 'center';
+                canvasCtx.font = '16px Arial';
+                canvasCtx.fillText('Paused', canvas.width / 2, canvas.height / 2);
+            }
+            drawVisualizer.animationFrameId = requestAnimationFrame(drawVisualizer); // Store animation frame id
+        }
+        // Stop the animation when the page is not visible
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden) {
+                if (drawVisualizer.animationFrameId) {
+                    cancelAnimationFrame(drawVisualizer.animationFrameId);
+                    drawVisualizer.animationFrameId = null; // Reset ID
+                }
+            } else {
+                if (currentAudioElement && !currentAudioElement.paused && !drawVisualizer.animationFrameId) {
+                     // Resume drawing only if audio is playing and not already drawing
+                    drawVisualizer();
+                }
+            }
+        });
+
+        // Pomodoro Clock Logic
+        let workDuration = 25 * 60; // seconds
+        let breakDuration = 5 * 60; // seconds
+        let timeLeft = workDuration;
+        let isPomodoroRunning = false;
+        let isWorkMode = true;
+        let timerInterval = null;
+        
+        // Declare variables for elements, will be assigned in DOMContentLoaded
+        let pomodoroTimerDisplay, pomodoroModeDisplay, startButton, pauseButton, resetButton, workDurationInput, breakDurationInput, applySettingsButton;
+
+        function updatePomodoroDisplay() {
+            if (!pomodoroTimerDisplay) return; // Guard against null element
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            pomodoroTimerDisplay.textContent = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        function switchPomodoroMode() {
+            isWorkMode = !isWorkMode;
+            timeLeft = isWorkMode ? workDuration : breakDuration;
+            if (pomodoroModeDisplay) pomodoroModeDisplay.textContent = isWorkMode ? "Work" : "Break";
+            // Optional: Add a notification sound here
+            // Example: document.getElementById('notification-sound').play();
+            updatePomodoroDisplay();
+        }
+
+        function startPomodoro() {
+            if (isPomodoroRunning) return;
+            isPomodoroRunning = true;
+            // Ensure audio context is resumed by user gesture if suspended
+            if (audioContext && audioContext.state === 'suspended') {
+                 audioContext.resume();
+            }
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft < 0) {
+                    switchPomodoroMode();
+                }
+                updatePomodoroDisplay();
+            }, 1000);
+        }
+
+        function pausePomodoro() {
+            if (!isPomodoroRunning) return;
+            isPomodoroRunning = false;
+            clearInterval(timerInterval);
+        }
+
+        function resetPomodoro() {
+            pausePomodoro();
+            timeLeft = isWorkMode ? workDuration : breakDuration;
+            updatePomodoroDisplay();
+        }
+
+        function applyPomodoroSettings() {
+            pausePomodoro();
+            const newWorkDuration = parseInt(workDurationInput.value);
+            const newBreakDuration = parseInt(breakDurationInput.value);
+
+            if (!isNaN(newWorkDuration) && newWorkDuration > 0) {
+                workDuration = newWorkDuration * 60;
+            } else {
+                workDurationInput.value = workDuration / 60; // Reset to old value if invalid
+            }
+            if (!isNaN(newBreakDuration) && newBreakDuration > 0) {
+                breakDuration = newBreakDuration * 60;
+            } else {
+                breakDurationInput.value = breakDuration / 60; // Reset to old value if invalid
+            }
+            
+            isWorkMode = true; // Reset to work mode
+            timeLeft = workDuration;
+            pomodoroModeDisplay.textContent = "Work";
+            updatePomodoroDisplay();
+        }
+        
+        // Removed initial updatePomodoroDisplay() call from here, will be done in DOMContentLoaded
 
 
         window.addEventListener("DOMContentLoaded",() => {
-	const clock = new BouncyEmbossedClock(".clock");
-});
+            const clock = new BouncyEmbossedClock(".clock");
+
+            // Assign Pomodoro elements now that DOM is loaded
+            pomodoroTimerDisplay = document.getElementById("pomodoro-timer");
+            pomodoroModeDisplay = document.getElementById("pomodoro-mode");
+            startButton = document.getElementById("pomodoro-start");
+            pauseButton = document.getElementById("pomodoro-pause");
+            resetButton = document.getElementById("pomodoro-reset");
+            workDurationInput = document.getElementById("work-duration");
+            breakDurationInput = document.getElementById("break-duration");
+            applySettingsButton = document.getElementById("pomodoro-apply-settings");
+            
+            // Pomodoro Event Listeners
+            if(startButton) startButton.addEventListener("click", startPomodoro);
+            if(pauseButton) pauseButton.addEventListener("click", pausePomodoro);
+            if(resetButton) resetButton.addEventListener("click", resetPomodoro);
+            if(applySettingsButton) applySettingsButton.addEventListener("click", applyPomodoroSettings);
+            
+            // Initialize Pomodoro Display and input fields on DOMContentLoaded
+            if(pomodoroTimerDisplay) updatePomodoroDisplay(); // Initial display update
+            if(workDurationInput) workDurationInput.value = workDuration / 60;
+            if(breakDurationInput) breakDurationInput.value = breakDuration / 60;
+            if(pomodoroModeDisplay) pomodoroModeDisplay.textContent = isWorkMode ? "Work" : "Break";
+
+        });
 
 class BouncyEmbossedClock {
 	constructor(el) {
@@ -168,14 +386,19 @@ class BouncyEmbossedClock {
 
     @keyframes changeBackground {
         0%, 100% {
-            background-image: url('https://picsum.photos/1920/1080?planets');
+            background-image: url('https://picsum.photos/1920/1080?planets'); /* Existing */
         }
-        33.33% {
-            background-image: url('https://picsum.photos/1920/1080?city');
+        20% {
+            background-image: url('https://picsum.photos/1920/1080?stars'); /* New */
         }
+        40% {
+            background-image: url('https://picsum.photos/1920/1080?galaxy'); /* New */
         }
-        66.66% {
-            background-image: url('https://picsum.photos/1920/1080?forest');
+        60% {
+            background-image: url('https://picsum.photos/1920/1080?nebula'); /* New */
+        }
+        80% {
+            background-image: url('https://picsum.photos/1920/1080?space'); /* New */
         }
     }
 
@@ -325,7 +548,7 @@ class BouncyEmbossedClock {
 
 </head>
 <body>
-    <div class="snowflakes" aria-hidden="true">
+    <div class="snowflakes" id="snowflakes" aria-hidden="true">
         <div class="snowflake">
         ❅
         </div>
@@ -358,9 +581,29 @@ class BouncyEmbossedClock {
     <div class="overlay"></div>  
     
     <input class="neon-button-clock1" id="play" type="button" style="left: 30px;" value="Play" onclick="playbtn()">
-    <input class="neon-button-clock1" type="button" value="Switch" style="left: 200px;" onclick="audio2()">
-    <audio id="audio" src="http://node-17.zeno.fm/0r0xa792kwzuv"></audio>
-    <audio id="audio2" src="https://ec2.yesstreaming.net:1915/stream"></audio>
+    <input class="neon-button-clock1" type="button" value="Switch" style="left: 120px;" onclick="audio2()">
+    <input class="neon-button-clock1" type="button" value="Snow" style="left: 230px;" onclick="toggleSnowflakes()">
+    <audio id="audio" src="http://node-17.zeno.fm/0r0xa792kwzuv" crossOrigin="anonymous"></audio>
+    <audio id="audio2" src="https://ec2.yesstreaming.net:1915/stream" crossOrigin="anonymous"></audio>
+
+    <canvas id="visualizer" width="300" height="100" style="position: absolute; bottom: 150px; left: 50%; transform: translateX(-50%); border: 1px solid var(--clr-neon); border-radius: 5px;"></canvas>
+
+    <div id="pomodoro-clock" style="position: absolute; top: 20px; right: 20px; text-align: center; color: white; font-family:Arial, Helvetica, sans-serif; background-color: var(--clr-bg); padding: 20px; border-radius: 10px; box-shadow: 0 0 1em 0.5em var(--clr-neon2);">
+        <div id="pomodoro-mode" style="font-size: 1.5rem; margin-bottom: 10px; color: var(--clr-neon);">Work</div>
+        <div id="pomodoro-timer" style="font-size: 3rem; margin-bottom: 20px; text-shadow: 0 0 0.125em hsl(0 0% 100% / 0.3), 0 0 0.45em currentColor;">25:00</div>
+        <div id="pomodoro-controls">
+            <button id="pomodoro-start" class="neon-button-clock1" style="position: static; font-size: 1rem; margin-right: 5px;">Start</button>
+            <button id="pomodoro-pause" class="neon-button-clock1" style="position: static; font-size: 1rem; margin-right: 5px;">Pause</button>
+            <button id="pomodoro-reset" class="neon-button-clock1" style="position: static; font-size: 1rem;">Reset</button>
+        </div>
+        <div id="pomodoro-settings" style="margin-top: 20px;">
+            <label for="work-duration" style="font-size: 1rem; color: var(--clr-neon);">Work (min):</label>
+            <input type="number" id="work-duration" value="25" min="1" style="width: 50px; font-size: 1rem; background-color: var(--clr-bg); color: white; border: 1px solid var(--clr-neon); border-radius: 5px; margin-right:10px;">
+            <label for="break-duration" style="font-size: 1rem; color: var(--clr-neon);">Break (min):</label>
+            <input type="number" id="break-duration" value="5" min="1" style="width: 50px; font-size: 1rem; background-color: var(--clr-bg); color: white; border: 1px solid var(--clr-neon); border-radius: 5px; margin-right:10px;">
+            <button id="pomodoro-apply-settings" class="neon-button-clock1" style="position: static; font-size: 0.9rem;">Apply</button>
+        </div>
+    </div>
 
     <div class="neon-button-clock" style="font-family:Arial, Helvetica, sans-serif;">
     <div class="clock">
